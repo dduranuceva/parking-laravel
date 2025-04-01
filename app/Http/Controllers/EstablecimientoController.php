@@ -35,8 +35,8 @@ class EstablecimientoController extends Controller
                 'nit'            => 'required|string|unique:establecimientos,nit',
                 'direccion'      => 'required|string',
                 'telefono'       => 'required|string',
-                'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg',
-                'logo_formatos'  => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
+                'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
+                
             ]);
 
             // Asignar estado 'A' de forma predeterminada
@@ -52,14 +52,7 @@ class EstablecimientoController extends Controller
                 $establecimiento->save();
             }
 
-            if ($request->hasFile('logo_formatos')) {
-                $file     = $request->file('logo_formatos');
-                $filename = $file->hashName();
-                $file->move(public_path('logo_formatos'), $filename);
-                $establecimiento->logo_formatos = $filename;
-                $establecimiento->save();
-            }
-
+          
             return response()->json([
                 'success' => true,
                 'message' => 'Establecimiento creado correctamente',
@@ -100,7 +93,7 @@ class EstablecimientoController extends Controller
 
     // Actualizar un establecimiento (incluyendo actualización de archivos)
     public function update(Request $request, $id)
-    {
+    {       
         try {
             $validatedData = $request->validate([
                 'nombre'         => 'sometimes|required|string',
@@ -110,7 +103,6 @@ class EstablecimientoController extends Controller
                 'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg',
                
             ]);
-
             $establecimiento = Establecimiento::findOrFail($id);
             $establecimiento->update($validatedData);
 
@@ -120,19 +112,11 @@ class EstablecimientoController extends Controller
                 $file->move(public_path('logos'), $filename);
                 $establecimiento->logo = $filename;
                 $establecimiento->save();
-            }
-
-            if ($request->hasFile('logo_formatos')) {
-                $file     = $request->file('logo_formatos');
-                $filename = $file->hashName();
-                $file->move(public_path('logo_formatos'), $filename);
-                $establecimiento->logo_formatos = $filename;
-                $establecimiento->save();
-            }
+            }           
 
             return response()->json([
                 'success' => true,
-                'message' => 'Establecimiento actualizado correctamente',
+                'message' => 'Establecimiento actualizado correctamente.',
                 'data'    => $establecimiento
             ]);
         } catch (ValidationException $ve) {
