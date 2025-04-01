@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Establecimiento;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request;                          
 use Illuminate\Validation\ValidationException;
 
 class EstablecimientoController extends Controller
