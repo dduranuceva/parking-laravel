@@ -1,0 +1,209 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API de Parqueadero",
+        "description": "Documentación de la API de Parqueadero",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/establecimientos": {
+            "get": {
+                "tags": [
+                    "Establecimientos"
+                ],
+                "summary": "Mostrar establecimientos",
+                "description": "Retorna todos los establecimientos activos",
+                "operationId": "a6b8b96ae573d6d24f8043b292b67c91",
+                "responses": {
+                    "200": {
+                        "description": "Listado de establecimientos."
+                    },
+                    "default": {
+                        "description": "Ha ocurrido un error."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Establecimientos"
+                ],
+                "summary": "Crear un establecimiento",
+                "description": "Crea un nuevo establecimiento y asigna estado = 'A' por defecto.",
+                "operationId": "14f5b014881b4e9a1730257d312811a1",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "nombre",
+                                    "nit",
+                                    "direccion",
+                                    "telefono"
+                                ],
+                                "properties": {
+                                    "nombre": {
+                                        "description": "Establecimiento Uno",
+                                        "type": "string"
+                                    },
+                                    "nit": {
+                                        "description": "123456789",
+                                        "type": "string"
+                                    },
+                                    "direccion": {
+                                        "description": "Calle Falsa 123",
+                                        "type": "string"
+                                    },
+                                    "telefono": {
+                                        "description": "555-1234",
+                                        "type": "string"
+                                    },
+                                    "logo": {
+                                        "description": "Archivo del logo",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Establecimiento creado correctamente."
+                    },
+                    "default": {
+                        "description": "Ha ocurrido un error."
+                    }
+                }
+            }
+        },
+        "/api/establecimientos/{id}": {
+            "get": {
+                "tags": [
+                    "Establecimientos"
+                ],
+                "summary": "Mostrar un establecimiento",
+                "description": "Retorna un establecimiento específico por su ID",
+                "operationId": "4970a1bd8b63a9fe60ecb878d574257c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del establecimiento",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle del establecimiento."
+                    },
+                    "default": {
+                        "description": "Ha ocurrido un error."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Establecimientos"
+                ],
+                "summary": "Actualizar un establecimiento",
+                "description": "Actualiza un establecimiento existente. Para enviar archivos, se recomienda usar override con _method=PUT.",
+                "operationId": "0f7dbb26850bbb36c87cb68b8c6b23b3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del establecimiento a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "description": "PUT",
+                                        "type": "string"
+                                    },
+                                    "nombre": {
+                                        "description": "Establecimiento Actualizado",
+                                        "type": "string"
+                                    },
+                                    "nit": {
+                                        "description": "987654321",
+                                        "type": "string"
+                                    },
+                                    "direccion": {
+                                        "description": "Nueva dirección",
+                                        "type": "string"
+                                    },
+                                    "telefono": {
+                                        "description": "555-5678",
+                                        "type": "string"
+                                    },
+                                    "logo": {
+                                        "description": "Archivo para actualizar el logo",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Establecimiento actualizado correctamente."
+                    },
+                    "default": {
+                        "description": "Ha ocurrido un error."
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Establecimientos"
+                ],
+                "summary": "Eliminar un establecimiento (borrado lógico)",
+                "description": "Cambia el estado del establecimiento a 'I' (inactivo)",
+                "operationId": "ab3cf94595621e1bdc6fb5fd20064086",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del establecimiento a eliminar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Establecimiento eliminado correctamente."
+                    },
+                    "default": {
+                        "description": "Ha ocurrido un error."
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Establecimientos",
+            "description": "Establecimientos"
+        }
+    ]
+}

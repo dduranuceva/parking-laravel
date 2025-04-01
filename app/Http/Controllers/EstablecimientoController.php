@@ -3,11 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Establecimiento;
-use Illuminate\Http\Request;                          
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
+
+
+/**
+ * @OA\Info(
+ *     title="API de Parqueadero",
+ *     version="1.0.0",
+ *     description="Documentación de la API de Parqueadero"
+ * )
+ */
 
 class EstablecimientoController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/establecimientos",
+     *    tags={"Establecimientos"},
+     *     summary="Mostrar establecimientos",
+     *     description="Retorna todos los establecimientos activos",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Listado de establecimientos."
+     *     ),
+     *     @OA\Response(
+     *         response="default",
+     *         description="Ha ocurrido un error."
+     *     )
+     * )
+     */
     // Mostrar todos los establecimientos activos (estado = 'A')
     public function index()
     {
@@ -25,6 +51,57 @@ class EstablecimientoController extends Controller
             ], 500);
         }
     }
+    /**
+     * @OA\Post(
+     *     path="/api/establecimientos",
+     *    tags={"Establecimientos"},
+     *     summary="Crear un establecimiento",
+     *     description="Crea un nuevo establecimiento y asigna estado = 'A' por defecto.",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"nombre", "nit", "direccion", "telefono"},
+     *                 @OA\Property(
+     *                     property="nombre",
+     *                     type="string",
+     *                     description="Establecimiento Uno"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="nit",
+     *                     type="string",
+     *                     description="123456789"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="direccion",
+     *                     type="string",
+     *                     description="Calle Falsa 123"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="telefono",
+     *                     type="string",
+     *                     description="555-1234"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="logo",
+     *                     type="Base64",
+     *                     format="binary",
+     *                     description="Archivo del logo"
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Establecimiento creado correctamente."
+     *     ),
+     *     @OA\Response(
+     *         response="default",
+     *         description="Ha ocurrido un error."
+     *     )
+     * )
+     */
 
     // Crear un nuevo establecimiento (se asigna estado 'A' por defecto)
     public function store(Request $request)
@@ -35,8 +112,8 @@ class EstablecimientoController extends Controller
                 'nit'            => 'required|string|unique:establecimientos,nit',
                 'direccion'      => 'required|string',
                 'telefono'       => 'required|string',
-                'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
-                
+                // 'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
+
             ]);
 
             // Asignar estado 'A' de forma predeterminada
@@ -45,14 +122,40 @@ class EstablecimientoController extends Controller
             $establecimiento = Establecimiento::create($validatedData);
 
             if ($request->hasFile('logo')) {
-                $file     = $request->file('logo');
+                // Si viene como archivo
+                $file = $request->file('logo');
                 $filename = $file->hashName();
                 $file->move(public_path('logos'), $filename);
                 $establecimiento->logo = $filename;
                 $establecimiento->save();
+            } elseif ($request->filled('logo') && Str::startsWith($request->logo, ['data:image', '/9j', 'iVBOR'])) {
+                // Si viene como base64
+                try {
+                    $base64Image = $request->logo;
+                    $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
+                    $extension = 'png'; // Asumimos png por defecto
+            
+                    // Intentamos detectar el tipo de archivo desde el string base64
+                    if (Str::startsWith($base64Image, 'data:image/jpeg')) $extension = 'jpg';
+                    if (Str::startsWith($base64Image, 'data:image/png')) $extension = 'png';
+                    if (Str::startsWith($base64Image, 'data:image/gif')) $extension = 'gif';
+            
+                    $filename = uniqid() . '.' . $extension;
+                    file_put_contents(public_path("logos/$filename"), $imageData);
+            
+                    $establecimiento->logo = $filename;
+                    $establecimiento->save();
+                } catch (\Exception $e) {
+                    // Si algo falla al guardar la imagen base64
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error al procesar la imagen en base64',
+                        'error'   => $e->getMessage()
+                    ], 422);
+                }
             }
 
-          
+
             return response()->json([
                 'success' => true,
                 'message' => 'Establecimiento creado correctamente',
@@ -72,7 +175,29 @@ class EstablecimientoController extends Controller
             ], 500);
         }
     }
-
+    /**
+     * @OA\Get(
+     *     path="/api/establecimientos/{id}",
+     *    tags={"Establecimientos"},
+     *     summary="Mostrar un establecimiento",
+     *     description="Retorna un establecimiento específico por su ID",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID del establecimiento",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Detalle del establecimiento."
+     *     ),
+     *     @OA\Response(
+     *         response="default",
+     *         description="Ha ocurrido un error."
+     *     )
+     * )
+     */
     // Mostrar un establecimiento por ID
     public function show($id)
     {
@@ -90,29 +215,120 @@ class EstablecimientoController extends Controller
             ], 404);
         }
     }
+    /**
+     * @OA\Post(
+     *     path="/api/establecimientos/{id}",
+     *    tags={"Establecimientos"},
+     *     summary="Actualizar un establecimiento",
+     *     description="Actualiza un establecimiento existente. Para enviar archivos, se recomienda usar override con _method=PUT.",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID del establecimiento a actualizar",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 @OA\Property(
+     *                     property="_method",
+     *                     type="string",
+     *                     description="Override del método HTTP - PUT",
+     *                     description="PUT"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="nombre",
+     *                     type="string",
+     *                     description="Establecimiento Actualizado"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="nit",
+     *                     type="string",
+     *                     description="987654321"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="direccion",
+     *                     type="string",
+     *                     description="Nueva dirección"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="telefono",
+     *                     type="string",
+     *                     description="555-5678"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="logo",
+     *                     type="Base64",
+     *                     format="binary",
+     *                     description="Archivo para actualizar el logo"
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Establecimiento actualizado correctamente."
+     *     ),
+     *     @OA\Response(
+     *         response="default",
+     *         description="Ha ocurrido un error."
+     *     )
+     * )
+     */
+
 
     // Actualizar un establecimiento (incluyendo actualización de archivos)
     public function update(Request $request, $id)
-    {       
+    {
         try {
             $validatedData = $request->validate([
                 'nombre'         => 'sometimes|required|string',
                 'nit'            => "sometimes|required|string|unique:establecimientos,nit,{$id}",
                 'direccion'      => 'sometimes|required|string',
                 'telefono'       => 'sometimes|required|string',
-                'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg',
-               
+                // 'logo'           => 'nullable',
+
             ]);
             $establecimiento = Establecimiento::findOrFail($id);
             $establecimiento->update($validatedData);
 
             if ($request->hasFile('logo')) {
-                $file     = $request->file('logo');
+                // Si viene como archivo
+                $file = $request->file('logo');
                 $filename = $file->hashName();
                 $file->move(public_path('logos'), $filename);
                 $establecimiento->logo = $filename;
                 $establecimiento->save();
-            }           
+            } elseif ($request->filled('logo') && Str::startsWith($request->logo, ['data:image', '/9j', 'iVBOR'])) {
+                // Si viene como base64
+                try {
+                    $base64Image = $request->logo;
+                    $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
+                    $extension = 'png'; // Asumimos png por defecto
+            
+                    // Intentamos detectar el tipo de archivo desde el string base64
+                    if (Str::startsWith($base64Image, 'data:image/jpeg')) $extension = 'jpg';
+                    if (Str::startsWith($base64Image, 'data:image/png')) $extension = 'png';
+                    if (Str::startsWith($base64Image, 'data:image/gif')) $extension = 'gif';
+            
+                    $filename = uniqid() . '.' . $extension;
+                    file_put_contents(public_path("logos/$filename"), $imageData);
+            
+                    $establecimiento->logo = $filename;
+                    $establecimiento->save();
+                } catch (\Exception $e) {
+                    // Si algo falla al guardar la imagen base64
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error al procesar la imagen en base64',
+                        'error'   => $e->getMessage()
+                    ], 422);
+                }
+            }
+            
 
             return response()->json([
                 'success' => true,
@@ -133,7 +349,29 @@ class EstablecimientoController extends Controller
             ], 500);
         }
     }
-
+    /**
+     * @OA\Delete(
+     *     path="/api/establecimientos/{id}",
+     *   tags={"Establecimientos"},
+     *     summary="Eliminar un establecimiento (borrado lógico)",
+     *     description="Cambia el estado del establecimiento a 'I' (inactivo)",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID del establecimiento a eliminar",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Establecimiento eliminado correctamente."
+     *     ),
+     *     @OA\Response(
+     *         response="default",
+     *         description="Ha ocurrido un error."
+     *     )
+     * )
+     */
     // Borrado lógico: cambiar el estado de activo ('A') a inactivo ('I')
     public function destroy($id)
     {
