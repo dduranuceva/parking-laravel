@@ -14,6 +14,7 @@ class Establecimiento extends Model
         'nit',
         'direccion',
         'telefono',
-        'logo'
+        'logo',
+        'estado'
     ];
 }

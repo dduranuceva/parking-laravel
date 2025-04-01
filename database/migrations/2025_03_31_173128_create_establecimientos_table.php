@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('direccion');
             $table->string('telefono');
             $table->string('logo')->nullable();
+            $table->string('estado')->default('A');
             $table->timestamps();
         });
     }

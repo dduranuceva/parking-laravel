@@ -8,11 +8,11 @@ use Illuminate\Validation\ValidationException;
 
 class EstablecimientoController extends Controller
 {
-    // Mostrar todos los establecimientos
+    // Mostrar todos los establecimientos activos (estado = 'A')
     public function index()
     {
         try {
-            $establecimientos = Establecimiento::all();
+            $establecimientos = Establecimiento::where('estado', 'A')->get();
             return response()->json([
                 'success' => true,
                 'data'    => $establecimientos
@@ -26,12 +26,10 @@ class EstablecimientoController extends Controller
         }
     }
 
-    // Crear un nuevo establecimiento
+    // Crear un nuevo establecimiento (se asigna estado 'A' por defecto)
     public function store(Request $request)
     {
         try {
-            // Validar la información.
-            // Se actualiza la validación para que los campos de imagen sean del tipo file y con formatos permitidos.
             $validatedData = $request->validate([
                 'nombre'         => 'required|string',
                 'nit'            => 'required|string|unique:establecimientos,nit',
@@ -41,24 +39,22 @@ class EstablecimientoController extends Controller
                 'logo_formatos'  => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
             ]);
 
-            // Crear el establecimiento sin archivos
+            // Asignar estado 'A' de forma predeterminada
+            $validatedData['estado'] = 'A';
+
             $establecimiento = Establecimiento::create($validatedData);
 
-            // Manejar el archivo "logo"
             if ($request->hasFile('logo')) {
                 $file     = $request->file('logo');
                 $filename = $file->hashName();
-                // Mover el archivo al directorio public/logos
                 $file->move(public_path('logos'), $filename);
                 $establecimiento->logo = $filename;
                 $establecimiento->save();
             }
 
-            // Manejar el archivo "logo_formatos"
             if ($request->hasFile('logo_formatos')) {
                 $file     = $request->file('logo_formatos');
                 $filename = $file->hashName();
-                // Mover el archivo al directorio public/logo_formatos
                 $file->move(public_path('logo_formatos'), $filename);
                 $establecimiento->logo_formatos = $filename;
                 $establecimiento->save();
@@ -70,14 +66,12 @@ class EstablecimientoController extends Controller
                 'data'    => $establecimiento
             ], 201);
         } catch (ValidationException $ve) {
-            // Manejo de errores de validación
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación',
                 'errors'  => $ve->errors()
             ], 422);
         } catch (\Exception $e) {
-            // Manejo de cualquier otra excepción
             return response()->json([
                 'success' => false,
                 'message' => 'Error al crear el establecimiento',
@@ -104,25 +98,22 @@ class EstablecimientoController extends Controller
         }
     }
 
-    // Actualizar un establecimiento
+    // Actualizar un establecimiento (incluyendo actualización de archivos)
     public function update(Request $request, $id)
     {
         try {
-            // Validar la información.
             $validatedData = $request->validate([
                 'nombre'         => 'sometimes|required|string',
                 'nit'            => "sometimes|required|string|unique:establecimientos,nit,{$id}",
                 'direccion'      => 'sometimes|required|string',
                 'telefono'       => 'sometimes|required|string',
                 'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg',
-                'logo_formatos'  => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
+               
             ]);
 
             $establecimiento = Establecimiento::findOrFail($id);
-            // Actualizar los campos que no sean archivos
             $establecimiento->update($validatedData);
 
-            // Manejar el archivo "logo" en caso de que se envíe
             if ($request->hasFile('logo')) {
                 $file     = $request->file('logo');
                 $filename = $file->hashName();
@@ -131,7 +122,6 @@ class EstablecimientoController extends Controller
                 $establecimiento->save();
             }
 
-            // Manejar el archivo "logo_formatos" en caso de que se envíe
             if ($request->hasFile('logo_formatos')) {
                 $file     = $request->file('logo_formatos');
                 $filename = $file->hashName();
@@ -160,12 +150,13 @@ class EstablecimientoController extends Controller
         }
     }
 
-    // Eliminar un establecimiento
+    // Borrado lógico: cambiar el estado de activo ('A') a inactivo ('I')
     public function destroy($id)
     {
         try {
             $establecimiento = Establecimiento::findOrFail($id);
-            $establecimiento->delete();
+            $establecimiento->estado = 'I';
+            $establecimiento->save();
             return response()->json([
                 'success' => true,
                 'message' => 'Establecimiento eliminado correctamente'
