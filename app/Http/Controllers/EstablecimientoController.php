@@ -103,78 +103,88 @@ class EstablecimientoController extends Controller
      * )
      */
 
-    // Crear un nuevo establecimiento (se asigna estado 'A' por defecto)
-    public function store(Request $request)
-    {
-        try {
-            $validatedData = $request->validate([
-                'nombre'         => 'required|string',
-                'nit'            => 'required|string|unique:establecimientos,nit',
-                'direccion'      => 'required|string',
-                'telefono'       => 'required|string',
-                // 'logo'           => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
-
-            ]);
-
-            // Asignar estado 'A' de forma predeterminada
-            $validatedData['estado'] = 'A';
-
-            $establecimiento = Establecimiento::create($validatedData);
-
-            if ($request->hasFile('logo')) {
-                // Si viene como archivo
-                $file = $request->file('logo');
-                $filename = $file->hashName();
-                $file->move(public_path('logos'), $filename);
-                $establecimiento->logo = $filename;
-                $establecimiento->save();
-            } elseif ($request->filled('logo') && Str::startsWith($request->logo, ['data:image', '/9j', 'iVBOR'])) {
-                // Si viene como base64
-                try {
-                    $base64Image = $request->logo;
-                    $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
-                    $extension = 'png'; // Asumimos png por defecto
-            
-                    // Intentamos detectar el tipo de archivo desde el string base64
-                    if (Str::startsWith($base64Image, 'data:image/jpeg')) $extension = 'jpg';
-                    if (Str::startsWith($base64Image, 'data:image/png')) $extension = 'png';
-                    if (Str::startsWith($base64Image, 'data:image/gif')) $extension = 'gif';
-            
-                    $filename = uniqid() . '.' . $extension;
-                    file_put_contents(public_path("logos/$filename"), $imageData);
-            
-                    $establecimiento->logo = $filename;
-                    $establecimiento->save();
-                } catch (\Exception $e) {
-                    // Si algo falla al guardar la imagen base64
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Error al procesar la imagen en base64',
-                        'error'   => $e->getMessage()
-                    ], 422);
-                }
-            }
-
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Establecimiento creado correctamente',
-                'data'    => $establecimiento
-            ], 201);
-        } catch (ValidationException $ve) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error de validación',
-                'errors'  => $ve->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear el establecimiento',
-                'error'   => $e->getMessage()
-            ], 500);
-        }
-    }
+    // Crear un nuevo establecimiento
+     // Se asigna estado 'A' por defecto
+     
+     public function store(Request $request)
+     {
+         try {
+             $validatedData = $request->validate([
+                 'nombre'    => 'required|string',
+                 'nit'       => 'required|string|unique:establecimientos,nit',
+                 'direccion' => 'required|string',
+                 'telefono'  => 'required|string',
+                 // 'logo'    => 'nullable|file|mimes:jpeg,png,jpg,gif,svg'
+             ]);
+     
+             // Asignar estado 'A' por defecto
+             $validatedData['estado'] = 'A';
+     
+             $establecimiento = Establecimiento::create($validatedData);
+     
+             // Determinar ruta correcta del directorio 'logos'
+             $destinationPath = app()->environment('production')
+                 ? base_path('../parking.visiontic.com.co/logos') // Ruta real del subdominio en producción
+                 : public_path('logos'); // Ruta local en desarrollo
+     
+             // Asegurar que la carpeta exista
+             if (!file_exists($destinationPath)) {
+                 mkdir($destinationPath, 0775, true);
+             }
+     
+             if ($request->hasFile('logo')) {
+                 // Si viene como archivo
+                 $file = $request->file('logo');
+                 $filename = $file->hashName();
+                 $file->move($destinationPath, $filename);
+     
+                 $establecimiento->logo = $filename;
+                 $establecimiento->save();
+             } elseif ($request->filled('logo') && Str::startsWith($request->logo, ['data:image', '/9j', 'iVBOR'])) {
+                 // Si viene como base64
+                 try {
+                     $base64Image = $request->logo;
+                     $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
+                     $extension = 'png'; 
+     
+                     if (Str::startsWith($base64Image, 'data:image/jpeg')) $extension = 'jpg';
+                     if (Str::startsWith($base64Image, 'data:image/png'))  $extension = 'png';
+                     if (Str::startsWith($base64Image, 'data:image/gif'))  $extension = 'gif';
+     
+                     $filename = uniqid() . '.' . $extension;
+                     file_put_contents("$destinationPath/$filename", $imageData);
+     
+                     $establecimiento->logo = $filename;
+                     $establecimiento->save();
+                 } catch (\Exception $e) {
+                     return response()->json([
+                         'success' => false,
+                         'message' => 'Error al procesar la imagen en base64',
+                         'error'   => $e->getMessage()
+                     ], 422);
+                 }
+             }
+     
+             return response()->json([
+                 'success' => true,
+                 'message' => 'Establecimiento creado correctamente',
+                 'data'    => $establecimiento
+             ], 201);
+         } catch (ValidationException $ve) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Error de validación',
+                 'errors'  => $ve->errors()
+             ], 422);
+         } catch (\Exception $e) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Error al crear el establecimiento',
+                 'error'   => $e->getMessage()
+             ], 500);
+         }
+     }
+     
     /**
      * @OA\Get(
      *     path="/api/establecimientos/{id}",
@@ -281,25 +291,37 @@ class EstablecimientoController extends Controller
 
 
     // Actualizar un establecimiento (incluyendo actualización de archivos)
+  
     public function update(Request $request, $id)
     {
         try {
             $validatedData = $request->validate([
-                'nombre'         => 'sometimes|required|string',
-                'nit'            => "sometimes|required|string|unique:establecimientos,nit,{$id}",
-                'direccion'      => 'sometimes|required|string',
-                'telefono'       => 'sometimes|required|string',
-                // 'logo'           => 'nullable',
-
+                'nombre'    => 'sometimes|required|string',
+                'nit'       => "sometimes|required|string|unique:establecimientos,nit,{$id}",
+                'direccion' => 'sometimes|required|string',
+                'telefono'  => 'sometimes|required|string',
+                // 'logo'   => 'nullable',
             ]);
+    
             $establecimiento = Establecimiento::findOrFail($id);
             $establecimiento->update($validatedData);
-
+    
+            // Determinar ruta correcta del directorio 'logos'
+            $destinationPath = app()->environment('production')
+                ? base_path('../parking.visiontic.com.co/logos') // Producción
+                : public_path('logos'); // Local
+    
+            // Crear la carpeta si no existe
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0775, true);
+            }
+    
             if ($request->hasFile('logo')) {
                 // Si viene como archivo
                 $file = $request->file('logo');
                 $filename = $file->hashName();
-                $file->move(public_path('logos'), $filename);
+                $file->move($destinationPath, $filename);
+    
                 $establecimiento->logo = $filename;
                 $establecimiento->save();
             } elseif ($request->filled('logo') && Str::startsWith($request->logo, ['data:image', '/9j', 'iVBOR'])) {
@@ -307,20 +329,18 @@ class EstablecimientoController extends Controller
                 try {
                     $base64Image = $request->logo;
                     $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
-                    $extension = 'png'; // Asumimos png por defecto
-            
-                    // Intentamos detectar el tipo de archivo desde el string base64
+                    $extension = 'png'; // Por defecto
+    
                     if (Str::startsWith($base64Image, 'data:image/jpeg')) $extension = 'jpg';
-                    if (Str::startsWith($base64Image, 'data:image/png')) $extension = 'png';
-                    if (Str::startsWith($base64Image, 'data:image/gif')) $extension = 'gif';
-            
+                    if (Str::startsWith($base64Image, 'data:image/png'))  $extension = 'png';
+                    if (Str::startsWith($base64Image, 'data:image/gif'))  $extension = 'gif';
+    
                     $filename = uniqid() . '.' . $extension;
-                    file_put_contents(public_path("logos/$filename"), $imageData);
-            
+                    file_put_contents("$destinationPath/$filename", $imageData);
+    
                     $establecimiento->logo = $filename;
                     $establecimiento->save();
                 } catch (\Exception $e) {
-                    // Si algo falla al guardar la imagen base64
                     return response()->json([
                         'success' => false,
                         'message' => 'Error al procesar la imagen en base64',
@@ -328,8 +348,7 @@ class EstablecimientoController extends Controller
                     ], 422);
                 }
             }
-            
-
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Establecimiento actualizado correctamente.',
@@ -349,6 +368,7 @@ class EstablecimientoController extends Controller
             ], 500);
         }
     }
+    
     /**
      * @OA\Delete(
      *     path="/api/establecimientos/{id}",

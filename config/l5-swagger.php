@@ -232,6 +232,11 @@ return [
                     */
                 ],
             ],
+            'bearerAuth' => [ // ← nombre que usamos en los @OA
+                'type' => 'http',
+                'scheme' => 'bearer',
+                'bearerFormat' => 'JWT',
+            ],
         ],
 
         /*

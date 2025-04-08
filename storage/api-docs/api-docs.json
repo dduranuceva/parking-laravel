@@ -6,6 +6,248 @@
         "version": "1.0.0"
     },
     "paths": {
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Iniciar sesión",
+                "description": "Inicia sesión y retorna el token JWT junto con los datos del usuario.",
+                "operationId": "f5914c86f5792eda2324f88d2b4abec7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "example": "admin@alpha.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "12345678"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login exitoso con token JWT"
+                    },
+                    "401": {
+                        "description": "Credenciales inválidas"
+                    },
+                    "500": {
+                        "description": "Error interno"
+                    }
+                }
+            }
+        },
+        "/api/perfil": {
+            "get": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Perfil del usuario autenticado",
+                "description": "Retorna la información del usuario autenticado mediante JWT.",
+                "operationId": "1732e6fdb406bd97d56d0850388b309c",
+                "responses": {
+                    "200": {
+                        "description": "Datos del usuario autenticado"
+                    },
+                    "500": {
+                        "description": "Error interno"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Autenticación"
+                ],
+                "summary": "Cerrar sesión",
+                "description": "Cierra la sesión eliminando el token JWT actual.",
+                "operationId": "0fcd11391ee41759f6eeca6123daa135",
+                "responses": {
+                    "200": {
+                        "description": "Sesión cerrada correctamente"
+                    },
+                    "500": {
+                        "description": "Error interno"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/users": {
+            "get": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Listar usuarios",
+                "description": "Retorna todos los usuarios del sistema.",
+                "operationId": "566aed8efb436ca506e0ef51a032ecd9",
+                "responses": {
+                    "200": {
+                        "description": "Lista de usuarios."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Crear usuario",
+                "description": "Crea un nuevo usuario en el sistema.",
+                "operationId": "be551c1d694a01c164966f58bfa77013",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Usuario creado correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación."
+                    }
+                }
+            }
+        },
+        "/api/users/{id}": {
+            "get": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Mostrar usuario",
+                "operationId": "6f51bd5fa2dddcd25e44cfa53dcbd10a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario encontrado."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado."
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Actualizar usuario",
+                "operationId": "070e37fc9aff78ae73860751bc990ed3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Usuario actualizado."
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Eliminar usuario",
+                "operationId": "0b4133ed462528a5e648b88ead11e929",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuario eliminado correctamente."
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado"
+                    }
+                }
+            }
+        },
         "/api/establecimientos": {
             "get": {
                 "tags": [
@@ -60,7 +302,7 @@
                                     },
                                     "logo": {
                                         "description": "Archivo del logo",
-                                        "type": "string",
+                                        "type": "Base64",
                                         "format": "binary"
                                     }
                                 },
@@ -153,7 +395,7 @@
                                     },
                                     "logo": {
                                         "description": "Archivo para actualizar el logo",
-                                        "type": "string",
+                                        "type": "Base64",
                                         "format": "binary"
                                     }
                                 },
@@ -201,6 +443,14 @@
         }
     },
     "tags": [
+        {
+            "name": "Autenticación",
+            "description": "Endpoints para autenticación con JWT"
+        },
+        {
+            "name": "Usuarios",
+            "description": "Usuarios"
+        },
         {
             "name": "Establecimientos",
             "description": "Establecimientos"
